@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Stacking Simulator - peptide helicity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-emerald-400">
+                <i class="fa-solid fa-circle-nodes text-2xl animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    DFT Quantum Stacking Visualizer
+                </h1>
+                <p class="text-xs text-slate-400">Supramolecular Peptide Helicity Prediction (B97x-D3BJ/def2-TZVP)</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button id="tab-3d" class="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-semibold text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/10 hover:bg-emerald-400">
+                <i class="fa-solid fa-cubes"></i> Dimer Stacking Visualizer
+            </button>
+            <button id="tab-ai" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-semibold text-sm transition-all hover:bg-slate-700 flex items-center gap-2 border border-slate-700">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> AI DFT Image Studio
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
+        
+        <section id="simulator-content" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-fadeIn">
+            
+            <div class="lg:col-span-5 flex flex-col gap-6">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-gears text-emerald-400"></i> Peptide Series Configuration
+                    </h3>
+                    
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Methylene Spacer Units (n)</label>
+                            <span id="active-spacer-name" class="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded">β-alanine (N2)</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="setSpacer(2)" id="btn-n2" class="spacer-btn py-2.5 rounded-xl border font-bold transition-all bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md">
+                                n = 2 <span class="block text-[9px] font-normal text-emerald-400/80">β-Ala</span>
+                            </button>
+                            <button onclick="setSpacer(3)" id="btn-n3" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 3 <span class="block text-[9px] font-normal text-slate-500">γ-Abu</span>
+                            </button>
+                            <button onclick="setSpacer(4)" id="btn-n4" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 4 <span class="block text-[9px] font-normal text-slate-500">δ-Ava</span>
+                            </button>
+                            <button onclick="setSpacer(5)" id="btn-n5" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 5 <span class="block text-[9px] font-normal text-slate-500">ε-Aca</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-arrows-spin text-emerald-400"></i> Twist Angle (θ)
+                                </label>
+                                <span id="angle-val" class="code-font text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">-40.0°</span>
+                            </div>
+                            <input type="range" id="angle-slider" min="-90" max="90" step="1" value="-40" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                            <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                                <span>-90° (Left Handed)</span>
+                                <span>0° (Parallel Stacking)</span>
+                                <span>+90° (Right Handed)</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-arrows-up-down text-amber-400"></i> Stacking Distance (d)
+                                </label>
+                                <span id="distance-val" class="code-font text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded text-xs">3.25 Å</span>
+                            </div>
+                            <input type="range" id="distance-slider" min="3.0" max="4.0" step="0.01" value="3.25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                                <span>Tight (3.0 Å)</span>
+                                <span id="optimal-dist-helper" class="text-amber-400/80">Optimal: 3.25 Å</span>
+                                <span>Loose (4.0 Å)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-800 mt-5 pt-4 flex flex-wrap gap-2 justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-slate-300 block">DFT Target States</span>
+                            <span class="text-[10px] text-slate-500">Snap directly to calculated profiles</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-snap-coaxial" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-[10px] font-bold rounded-lg border border-slate-700 transition-all text-slate-300 flex items-center gap-1">
+                                <i class="fa-solid fa-grip-lines"></i> Parallel (0°)
+                            </button>
+                            <button id="btn-snap-global" class="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-[10px] font-bold rounded-lg border border-emerald-500/30 transition-all text-emerald-400 flex items-center gap-1">
+                                <i class="fa-solid fa-award"></i> Global Min
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-emerald-400"></i> Active DFT Energy Assessment
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                                <span class="text-[11px] text-slate-400 font-medium">Binding Energy (B.E.)</span>
+                                <div class="mt-1">
+                                    <span id="stat-be" class="text-xl font-bold text-rose-400 code-font">-18.10</span>
+                                    <span class="text-[10px] text-slate-500 ml-1">kcal/mol</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                                <span class="text-[11px] text-slate-400 font-medium">Dispersion Contribution</span>
+                                <div class="mt-1">
+                                    <span id="stat-disp" class="text-xl font-bold text-sky-400 code-font">-8.60</span>
+                                    <span class="text-[10px] text-slate-500 ml-1">kcal/mol</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] text-slate-400 font-medium">Predicted Supramolecular Helicity</span>
+                                <span id="stat-helicity-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Left-Handed</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-slate-900 pt-2 text-xs">
+                                <span class="text-slate-500">First CD Cotton Effect:</span>
+                                <span id="stat-cotton-text" class="font-semibold text-rose-400">Negative Cotton Effect</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Nanofiber Handedness:</span>
+                                <span id="stat-fiber-text" class="font-semibold text-rose-400">Left-Handed Twist</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-optimize" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-sm transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20">
+                        <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i> Auto-Optimize to Energy Ground State
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col relative h-[420px]">
+                    <div class="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur border border-slate-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-slate-300 font-semibold tracking-wide">CPK Ball-and-Stick Dimer Stacking Model</span>
+                    </div>
+                    <div class="absolute top-4 right-4 z-10 flex gap-2">
+                        <button onclick="resetCamera()" class="p-2 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all text-xs" title="Reset Viewport">
+                            <i class="fa-solid fa-arrows-to-eye"></i> Reset View
+                        </button>
+                    </div>
+
+                    <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+                    <div class="absolute bottom-4 right-4 z-10 bg-slate-950/80 backdrop-blur border border-slate-800 rounded-xl p-3 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1.5 shadow-2xl">
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-slate-600 border border-slate-500 block"></span><span class="text-slate-300 font-medium">Carbon (Imide & Spacer)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-red-600 block"></span><span class="text-slate-300 font-medium">Oxygen (Red)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-blue-600 block"></span><span class="text-slate-300 font-medium">Nitrogen (Blue)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#fae8ff] border border-slate-400 block"></span><span class="text-slate-300 font-medium">Hydrogen (White)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-indigo-500 block"></span><span class="text-slate-300 font-medium">Chiral L-Ile Residue</span></div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-0.5 bg-cyan-400 inline-block relative top-0.5"></span>
+                            <span class="text-cyan-400 font-medium tracking-tight">Dipole Moment Vector (μ)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i> DFT Energy Profiles matching Fig 5e (JPC B)
+                        </h3>
+                        <div class="flex gap-3 text-[9px] font-bold text-slate-400">
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#64748b] rounded-sm"></span> N2 (Even)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#ef4444] rounded-sm"></span> N3 (Odd)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#3b82f6] rounded-sm"></span> N4 (Even)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#10b981] rounded-sm"></span> N5 (Odd)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full h-[180px] relative">
+                        <svg id="energy-svg" class="w-full h-full overflow-visible" viewBox="0 0 1000 200">
+                            <line x1="50" y1="170" x2="950" y2="170" stroke="#1e293b" stroke-width="1.5" /> 
+                            <line x1="500" y1="10" x2="500" y2="185" stroke="#334155" stroke-width="1.5" stroke-dasharray="4,4" /> 
+                            
+                            <line id="cursor-line" x1="0" y1="10" x2="0" y2="185" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" class="opacity-0 transition-opacity" />
+
+                            <path id="curve-n2" d="" fill="none" stroke="#64748b" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n3" d="" fill="none" stroke="#ef4444" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n4" d="" fill="none" stroke="#3b82f6" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n5" d="" fill="none" stroke="#10b981" stroke-width="1.5" class="opacity-40" />
+
+                            <path id="active-curve-area" d="" fill="url(#active-area-grad)" stroke="none" />
+                            <path id="active-curve-stroke" d="" fill="none" stroke="#10b981" stroke-width="4.5" />
+
+                            <circle id="optimal-dot" cx="0" cy="0" r="5.5" fill="#f59e0b" stroke="#ffffff" stroke-width="2" class="transition-all" />
+                            <text id="optimal-dot-label" x="0" y="0" fill="#f59e0b" font-size="9" font-weight="bold" class="code-font"></text>
+
+                            <circle id="live-point" cx="0" cy="0" r="7.5" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="transition-all duration-75" />
+                            
+                            <defs>
+                                <linearGradient id="active-area-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop id="grad-stop-start" offset="0%" stop-color="#ef4444" stop-opacity="0.18" />
+                                    <stop id="grad-stop-end" offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-10">
+                            <span>-90° (Left Handed)</span>
+                            <span class="text-slate-400 font-bold">0° (Coaxial Parallel)</span>
+                            <span>+90° (Right Handed)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="ai-content" class="lg:col-span-12 hidden w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 flex flex-col gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Computational Rendering Console
+                        </h3>
+                        <p class="text-sm text-slate-400 mb-5 leading-relaxed">
+                            Generate custom atomistic diagrams, electrostatic potential surface maps, or self-assembly graphics of the 1,8-naphthalimide nanofibers utilizing advanced generative models.
+                        </p>
+
+                        <div class="space-y-2 mb-5">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Select Template Prompt</label>
+                            <button onclick="setPrompt(0)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-bolt text-amber-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">Electrostatic Potential Surface</p>
+                                    <p class="text-[10px] text-slate-500">HOMO/LUMO interaction on NMI stacks</p>
+                                </div>
+                            </button>
+                            <button onclick="setPrompt(1)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-dna text-teal-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">Helical Nanofiber Assembly</p>
+                                    <p class="text-[10px] text-slate-500">Atomic structure of chiral left-handed nanofibers</p>
+                                </div>
+                            </button>
+                            <button onclick="setPrompt(2)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-microscope text-rose-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">STM/FE-SEM Simulation</p>
+                                    <p class="text-[10px] text-slate-500">Nanofibers self-supported in hydrogel state</p>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Edit Image Instruction</label>
+                            <textarea id="prompt-input" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-all placeholder-slate-700" placeholder="Type custom directives for generating high-definition molecular structures..."></textarea>
+                        </div>
+
+                        <button id="btn-generate-ai" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20">
+                            <i class="fa-solid fa-sparkles"></i> Render Image with Imagen-4
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl min-h-[500px] flex flex-col justify-between relative">
+                        <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                            <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-image text-indigo-400"></i> Active Render Viewport
+                            </h3>
+                            <span id="rendering-badge" class="hidden px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-semibold animate-pulse border border-indigo-500/20">
+                                Generating Molecular Graphics...
+                            </span>
+                        </div>
+
+                        <div class="flex-grow flex flex-col items-center justify-center py-10 relative">
+                            <div id="ai-placeholder" class="text-center p-8 max-w-sm">
+                                <div class="h-20 w-20 bg-indigo-500/10 rounded-full border border-indigo-500/20 flex items-center justify-center mx-auto mb-5 text-indigo-400 text-3xl">
+                                    <i class="fa-solid fa-images"></i>
+                                </div>
+                                <h4 class="text-white font-bold mb-2">Workspace Empty</h4>
+                                <p class="text-xs text-slate-500">
+                                    Choose an academic preset on the left or type your customized schematic instruction to synthesize imagery.
+                                </p>
+                            </div>
+
+                            <div id="ai-loader" class="hidden text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-6">
+                                    <div class="absolute inset-0 rounded-full border-4 border-indigo-500/25 border-t-indigo-500 animate-spin"></div>
+                                    <div class="absolute inset-2 rounded-full border-4 border-purple-500/15 border-r-purple-400 animate-spin-reverse"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center text-indigo-400 text-2xl animate-pulse">
+                                        <i class="fa-solid fa-brain"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-white font-bold mb-1">Synthesizing Computational Graphics</h4>
+                                <p class="text-xs text-slate-500">Calculating electrostatic boundary structures...</p>
+                            </div>
+
+                            <div id="ai-result-container" class="hidden w-full h-full max-h-[420px] overflow-hidden rounded-xl border border-slate-800 bg-slate-950 relative group">
+                                <img id="ai-result-img" class="w-full h-full object-contain" src="" alt="DFT Render">
+                                <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="downloadRender()" class="px-4 py-2 rounded-xl bg-slate-950/95 text-white text-xs border border-slate-700 hover:bg-slate-800 flex items-center gap-1.5 shadow-2xl transition-all">
+                                        <i class="fa-solid fa-download"></i> Download High-Res Map
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
+                            <span>Image output generated on demand via Imagen Predict endpoint.</span>
+                            <span>Scale: 1024 x 1024 px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 px-6 mt-12">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div>
+                <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <i class="fa-solid fa-graduation-cap text-emerald-400"></i> The Odd-Even Methylene Spacer Effect
+                </h4>
+                <p class="text-slate-400 leading-relaxed text-xs">
+                    As reported in the paper, the supramolecular helicity of nanofibers assembled from naphthalimide-peptide building blocks is inverted with the alteration of methylene spacer units in the achiral segment. 
+                    Even spacers (n=2, 4) tilt the local dipole transitions in an anticlockwise configuration, producing left-handed assemblies. 
+                    Conversely, odd spacers (n=3, 5) enforce a clockwise twist angle, initiating right-handed helical nanofibrils.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <i class="fa-solid fa-calculator text-amber-400"></i> DFT Ground-State Energetics
+                </h4>
+                <p class="text-slate-400 leading-relaxed text-xs">
+                    Density Functional Theory calculations at the range-separated hybrid functional level (ωB97X-D3BJ/def2-TZVP) confirm that noncovalent dispersion forces (E_disp) are predominantly responsible for this structural outcome. 
+                    Dimer optimization maps indicate a global minimum at -40° and -50° twist angles for Even spacers, and +30° twist angles for Odd spacers, agreeing precisely with experimental Cotton effects seen in CD spectroscopy.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="toast-msg" class="fixed bottom-6 right-6 z-[100] transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-2xl max-w-sm flex items-start gap-3">
+        <div id="toast-icon" class="text-xl text-emerald-400">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <h5 id="toast-title" class="font-bold text-white text-sm">Action Complete</h5>
+            <p id="toast-body" class="text-xs text-slate-400 mt-0.5">The system state has updated.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
