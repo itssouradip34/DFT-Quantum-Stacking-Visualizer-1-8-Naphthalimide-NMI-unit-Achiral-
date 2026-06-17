@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Stacking Simulator - peptide helicity</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for symbols/icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Three.js for CPK Ball-and-Stick Molecular Modeling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Fira+Code:wght@400;500&display=swap');
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/30 text-emerald-400">
+                <i class="fa-solid fa-circle-nodes text-2xl animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    DFT Quantum Stacking Visualizer
+                </h1>
+                <p class="text-xs text-slate-400">Supramolecular Peptide Helicity Prediction (B97x-D3BJ/def2-TZVP)</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button id="tab-3d" class="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-semibold text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/10 hover:bg-emerald-400">
+                <i class="fa-solid fa-cubes"></i> Dimer Stacking Visualizer
+            </button>
+            <button id="tab-ai" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-semibold text-sm transition-all hover:bg-slate-700 flex items-center gap-2 border border-slate-700">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> AI DFT Image Studio
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-grow p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
+        
+        <!-- ================= SIMULATOR TAB CONTENT ================= -->
+        <section id="simulator-content" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-fadeIn">
+            
+            <!-- Left Panel: Configurations & Parameter Controls (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+                
+                <!-- Spacer & Molecule Selection Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-gears text-emerald-400"></i> Peptide Series Configuration
+                    </h3>
+                    
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Methylene Spacer Units (n)</label>
+                            <span id="active-spacer-name" class="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded">β-alanine (N2)</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="setSpacer(2)" id="btn-n2" class="spacer-btn py-2.5 rounded-xl border font-bold transition-all bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md">
+                                n = 2 <span class="block text-[9px] font-normal text-emerald-400/80">β-Ala</span>
+                            </button>
+                            <button onclick="setSpacer(3)" id="btn-n3" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 3 <span class="block text-[9px] font-normal text-slate-500">γ-Abu</span>
+                            </button>
+                            <button onclick="setSpacer(4)" id="btn-n4" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 4 <span class="block text-[9px] font-normal text-slate-500">δ-Ava</span>
+                            </button>
+                            <button onclick="setSpacer(5)" id="btn-n5" class="spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50">
+                                n = 5 <span class="block text-[9px] font-normal text-slate-500">ε-Aca</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sliders Block -->
+                    <div class="space-y-4">
+                        <!-- Twist Angle -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-arrows-spin text-emerald-400"></i> Twist Angle (θ)
+                                </label>
+                                <span id="angle-val" class="code-font text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">-40.0°</span>
+                            </div>
+                            <input type="range" id="angle-slider" min="-90" max="90" step="1" value="-40" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                            <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                                <span>-90° (Left Handed)</span>
+                                <span>0° (Parallel Stacking)</span>
+                                <span>+90° (Right Handed)</span>
+                            </div>
+                        </div>
+
+                        <!-- Stacking Distance -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-arrows-up-down text-amber-400"></i> Stacking Distance (d)
+                                </label>
+                                <span id="distance-val" class="code-font text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded text-xs">3.25 Å</span>
+                            </div>
+                            <input type="range" id="distance-slider" min="3.0" max="4.0" step="0.01" value="3.25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                                <span>Tight (3.0 Å)</span>
+                                <span id="optimal-dist-helper" class="text-amber-400/80">Optimal: 3.25 Å</span>
+                                <span>Loose (4.0 Å)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Snap Presets Box -->
+                    <div class="border-t border-slate-800 mt-5 pt-4 flex flex-wrap gap-2 justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-slate-300 block">DFT Target States</span>
+                            <span class="text-[10px] text-slate-500">Snap directly to calculated profiles</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-snap-coaxial" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-[10px] font-bold rounded-lg border border-slate-700 transition-all text-slate-300 flex items-center gap-1">
+                                <i class="fa-solid fa-grip-lines"></i> Parallel (0°)
+                            </button>
+                            <button id="btn-snap-global" class="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-[10px] font-bold rounded-lg border border-emerald-500/30 transition-all text-emerald-400 flex items-center gap-1">
+                                <i class="fa-solid fa-award"></i> Global Min
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantum Thermodynamics Performance Panel -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-emerald-400"></i> Active DFT Energy Assessment
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                                <span class="text-[11px] text-slate-400 font-medium">Binding Energy (B.E.)</span>
+                                <div class="mt-1">
+                                    <span id="stat-be" class="text-xl font-bold text-rose-400 code-font">-18.10</span>
+                                    <span class="text-[10px] text-slate-500 ml-1">kcal/mol</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                                <span class="text-[11px] text-slate-400 font-medium">Dispersion Contribution</span>
+                                <div class="mt-1">
+                                    <span id="stat-disp" class="text-xl font-bold text-sky-400 code-font">-8.60</span>
+                                    <span class="text-[10px] text-slate-500 ml-1">kcal/mol</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Helicity Analysis Summary -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] text-slate-400 font-medium">Predicted Supramolecular Helicity</span>
+                                <span id="stat-helicity-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Left-Handed</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-slate-900 pt-2 text-xs">
+                                <span class="text-slate-500">First CD Cotton Effect:</span>
+                                <span id="stat-cotton-text" class="font-semibold text-rose-400">Negative Cotton Effect</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Nanofiber Handedness:</span>
+                                <span id="stat-fiber-text" class="font-semibold text-rose-400">Left-Handed Twist</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-optimize" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-sm transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20">
+                        <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i> Auto-Optimize to Energy Ground State
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: CPK Molecular Sandbox & Dynamic SVG PES Graph (7 cols) -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Ball-and-Stick CPK Viewport -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col relative h-[420px]">
+                    <div class="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur border border-slate-800 rounded-lg px-3 py-1.5 text-xs flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-slate-300 font-semibold tracking-wide">CPK Ball-and-Stick Dimer Stacking Model</span>
+                    </div>
+                    <div class="absolute top-4 right-4 z-10 flex gap-2">
+                        <button onclick="resetCamera()" class="p-2 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all text-xs" title="Reset Viewport">
+                            <i class="fa-solid fa-arrows-to-eye"></i> Reset View
+                        </button>
+                    </div>
+
+                    <!-- 3D Scene Wrapper -->
+                    <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+                    <!-- CPK Atomic Legend Overlay -->
+                    <div class="absolute bottom-4 right-4 z-10 bg-slate-950/80 backdrop-blur border border-slate-800 rounded-xl p-3 text-[10px] grid grid-cols-2 gap-x-4 gap-y-1.5 shadow-2xl">
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-slate-600 border border-slate-500 block"></span><span class="text-slate-300 font-medium">Carbon (Imide & Spacer)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-red-600 block"></span><span class="text-slate-300 font-medium">Oxygen (Red)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-blue-600 block"></span><span class="text-slate-300 font-medium">Nitrogen (Blue)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#fae8ff] border border-slate-400 block"></span><span class="text-slate-300 font-medium">Hydrogen (White)</span></div>
+                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-indigo-500 block"></span><span class="text-slate-300 font-medium">Chiral L-Ile Residue</span></div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-0.5 bg-cyan-400 inline-block relative top-0.5"></span>
+                            <span class="text-cyan-400 font-medium tracking-tight">Dipole Moment Vector (μ)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Multi-PES Curve Chart -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i> DFT Energy Profiles matching Fig 5e (JPC B)
+                        </h3>
+                        <div class="flex gap-3 text-[9px] font-bold text-slate-400">
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#64748b] rounded-sm"></span> N2 (Even)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#ef4444] rounded-sm"></span> N3 (Odd)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#3b82f6] rounded-sm"></span> N4 (Even)</span>
+                            <span class="flex items-center gap-1"><span class="h-1.5 w-3 bg-[#10b981] rounded-sm"></span> N5 (Odd)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full h-[180px] relative">
+                        <svg id="energy-svg" class="w-full h-full overflow-visible" viewBox="0 0 1000 200">
+                            <!-- Reference Grid Lines -->
+                            <line x1="50" y1="170" x2="950" y2="170" stroke="#1e293b" stroke-width="1.5" /> <!-- Zero Line -->
+                            <line x1="500" y1="10" x2="500" y2="185" stroke="#334155" stroke-width="1.5" stroke-dasharray="4,4" /> <!-- θ = 0° vertical line -->
+                            
+                            <!-- Vertical Cursor Line -->
+                            <line id="cursor-line" x1="0" y1="10" x2="0" y2="185" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" class="opacity-0 transition-opacity" />
+
+                            <!-- Background curve trails (semi-opaque) -->
+                            <path id="curve-n2" d="" fill="none" stroke="#64748b" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n3" d="" fill="none" stroke="#ef4444" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n4" d="" fill="none" stroke="#3b82f6" stroke-width="1.5" class="opacity-40" />
+                            <path id="curve-n5" d="" fill="none" stroke="#10b981" stroke-width="1.5" class="opacity-40" />
+
+                            <!-- Active highlighted curve filled area -->
+                            <path id="active-curve-area" d="" fill="url(#active-area-grad)" stroke="none" />
+                            <path id="active-curve-stroke" d="" fill="none" stroke="#10b981" stroke-width="4.5" />
+
+                            <!-- Minima Markers -->
+                            <circle id="optimal-dot" cx="0" cy="0" r="5.5" fill="#f59e0b" stroke="#ffffff" stroke-width="2" class="transition-all" />
+                            <text id="optimal-dot-label" x="0" y="0" fill="#f59e0b" font-size="9" font-weight="bold" class="code-font"></text>
+
+                            <!-- Dynamic Intersection Pointer -->
+                            <circle id="live-point" cx="0" cy="0" r="7.5" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="transition-all duration-75" />
+                            
+                            <!-- Gradients -->
+                            <defs>
+                                <linearGradient id="active-area-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop id="grad-stop-start" offset="0%" stop-color="#ef4444" stop-opacity="0.18" />
+                                    <stop id="grad-stop-end" offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        
+                        <!-- Axis indicators -->
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-10">
+                            <span>-90° (Left Handed)</span>
+                            <span class="text-slate-400 font-bold">0° (Coaxial Parallel)</span>
+                            <span>+90° (Right Handed)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= AI GENERATOR TAB CONTENT ================= -->
+        <section id="ai-content" class="lg:col-span-12 hidden w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Control console (5 cols) -->
+                <div class="lg:col-span-5 flex flex-col gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Computational Rendering Console
+                        </h3>
+                        <p class="text-sm text-slate-400 mb-5 leading-relaxed">
+                            Generate custom atomistic diagrams, electrostatic potential surface maps, or self-assembly graphics of the 1,8-naphthalimide nanofibers utilizing advanced generative models.
+                        </p>
+
+                        <div class="space-y-2 mb-5">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Select Template Prompt</label>
+                            <button onclick="setPrompt(0)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-bolt text-amber-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">Electrostatic Potential Surface</p>
+                                    <p class="text-[10px] text-slate-500">HOMO/LUMO interaction on NMI stacks</p>
+                                </div>
+                            </button>
+                            <button onclick="setPrompt(1)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-dna text-teal-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">Helical Nanofiber Assembly</p>
+                                    <p class="text-[10px] text-slate-500">Atomic structure of chiral left-handed nanofibers</p>
+                                </div>
+                            </button>
+                            <button onclick="setPrompt(2)" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/40 transition-all text-xs flex items-center gap-3">
+                                <i class="fa-solid fa-microscope text-rose-400"></i>
+                                <div>
+                                    <p class="font-bold text-slate-200">STM/FE-SEM Simulation</p>
+                                    <p class="text-[10px] text-slate-500">Nanofibers self-supported in hydrogel state</p>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Edit Image Instruction</label>
+                            <textarea id="prompt-input" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-all placeholder-slate-700" placeholder="Type custom directives for generating high-definition molecular structures..."></textarea>
+                        </div>
+
+                        <button id="btn-generate-ai" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20">
+                            <i class="fa-solid fa-sparkles"></i> Render Image with Imagen-4
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas display (7 cols) -->
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl min-h-[500px] flex flex-col justify-between relative">
+                        <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                            <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-image text-indigo-400"></i> Active Render Viewport
+                            </h3>
+                            <span id="rendering-badge" class="hidden px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-semibold animate-pulse border border-indigo-500/20">
+                                Generating Molecular Graphics...
+                            </span>
+                        </div>
+
+                        <!-- Canvas state manager -->
+                        <div class="flex-grow flex flex-col items-center justify-center py-10 relative">
+                            <!-- Placeholder state -->
+                            <div id="ai-placeholder" class="text-center p-8 max-w-sm">
+                                <div class="h-20 w-20 bg-indigo-500/10 rounded-full border border-indigo-500/20 flex items-center justify-center mx-auto mb-5 text-indigo-400 text-3xl">
+                                    <i class="fa-solid fa-images"></i>
+                                </div>
+                                <h4 class="text-white font-bold mb-2">Workspace Empty</h4>
+                                <p class="text-xs text-slate-500">
+                                    Choose an academic preset on the left or type your customized schematic instruction to synthesize imagery.
+                                </p>
+                            </div>
+
+                            <!-- Spinning atoms loader -->
+                            <div id="ai-loader" class="hidden text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-6">
+                                    <div class="absolute inset-0 rounded-full border-4 border-indigo-500/25 border-t-indigo-500 animate-spin"></div>
+                                    <div class="absolute inset-2 rounded-full border-4 border-purple-500/15 border-r-purple-400 animate-spin-reverse"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center text-indigo-400 text-2xl animate-pulse">
+                                        <i class="fa-solid fa-brain"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-white font-bold mb-1">Synthesizing Computational Graphics</h4>
+                                <p class="text-xs text-slate-500">Calculating electrostatic boundary structures...</p>
+                            </div>
+
+                            <!-- Output display image frame -->
+                            <div id="ai-result-container" class="hidden w-full h-full max-h-[420px] overflow-hidden rounded-xl border border-slate-800 bg-slate-950 relative group">
+                                <img id="ai-result-img" class="w-full h-full object-contain" src="" alt="DFT Render">
+                                <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="downloadRender()" class="px-4 py-2 rounded-xl bg-slate-950/95 text-white text-xs border border-slate-700 hover:bg-slate-800 flex items-center gap-1.5 shadow-2xl transition-all">
+                                        <i class="fa-solid fa-download"></i> Download High-Res Map
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
+                            <span>Image output generated on demand via Imagen Predict endpoint.</span>
+                            <span>Scale: 1024 x 1024 px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Detailed Science Dashboard explanation -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 px-6 mt-12">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div>
+                <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <i class="fa-solid fa-graduation-cap text-emerald-400"></i> The Odd-Even Methylene Spacer Effect
+                </h4>
+                <p class="text-slate-400 leading-relaxed text-xs">
+                    As reported in the paper, the supramolecular helicity of nanofibers assembled from naphthalimide-peptide building blocks is inverted with the alteration of methylene spacer units in the achiral segment. 
+                    Even spacers ($n=2, 4$) tilt the local dipole transitions in an anticlockwise configuration, producing left-handed assemblies. 
+                    Conversely, odd spacers ($n=3, 5$) enforce a clockwise twist angle, initiating right-handed helical nanofibrils.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-2 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <i class="fa-solid fa-calculator text-amber-400"></i> DFT Ground-State Energetics
+                </h4>
+                <p class="text-slate-400 leading-relaxed text-xs">
+                    Density Functional Theory calculations at the range-separated hybrid functional level ($\omega\text{B97X-D3BJ/def2-TZVP}$) confirm that noncovalent dispersion forces ($E_{\text{disp}}$) are predominantly responsible for this structural outcome. 
+                    Dimer optimization maps indicate a global minimum at $-40^\circ$ and $-50^\circ$ twist angles for Even spacers, and $+30^\circ$ twist angles for Odd spacers, agreeing precisely with experimental Cotton effects seen in CD spectroscopy.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Global Notifications toast -->
+    <div id="toast-msg" class="fixed bottom-6 right-6 z-[100] transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-2xl max-w-sm flex items-start gap-3">
+        <div id="toast-icon" class="text-xl text-emerald-400">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <h5 id="toast-title" class="font-bold text-white text-sm">Action Complete</h5>
+            <p id="toast-body" class="text-xs text-slate-400 mt-0.5">The system state has updated.</p>
+        </div>
+    </div>
+
+    <!-- ================= IMPLEMENTED SCRIPT ENGINE ================= -->
+    <script>
+        // Tab switching controller
+        const btn3d = document.getElementById('tab-3d');
+        const btnAi = document.getElementById('tab-ai');
+        const sec3d = document.getElementById('simulator-content');
+        const secAi = document.getElementById('ai-content');
+
+        btn3d.addEventListener('click', () => {
+            btn3d.className = "px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-semibold text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/10 hover:bg-emerald-400";
+            btnAi.className = "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-semibold text-sm transition-all hover:bg-slate-700 flex items-center gap-2 border border-slate-700";
+            sec3d.classList.remove('hidden');
+            secAi.classList.add('hidden');
+        });
+
+        btnAi.addEventListener('click', () => {
+            btnAi.className = "px-4 py-2 rounded-lg bg-indigo-500 text-white font-semibold text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/10 hover:bg-indigo-400";
+            btn3d.className = "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-semibold text-sm transition-all hover:bg-slate-700 flex items-center gap-2 border border-slate-700";
+            secAi.classList.remove('hidden');
+            sec3d.classList.add('hidden');
+            window.dispatchEvent(new Event('resize'));
+        });
+
+        // Toast messenger
+        function showToast(title, body, iconClass = "fa-circle-check", textHex = "text-emerald-400") {
+            const toast = document.getElementById('toast-msg');
+            const tTitle = document.getElementById('toast-title');
+            const tBody = document.getElementById('toast-body');
+            const tIcon = document.getElementById('toast-icon');
+
+            tTitle.innerText = title;
+            tBody.innerText = body;
+            tIcon.className = `text-xl ${textHex}`;
+            tIcon.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // Preset prompts for AI generation
+        const prompts = [
+            "Extremely high-quality scientific render of a naphthalimide organic dye dimer stack, displaying the calculated Quantum Electrostatic Potential (ESP) mapped onto its electron density cloud, with neon cyan and pink gradients showing electron distribution, dark laboratory black background, 8k resolution, stylized computational physics aesthetic.",
+            "Detailed molecular modeling illustration of a self-assembled chiral peptide-linked nanofiber. Showing atomic ball-and-stick representations of L-isoleucine amino acid chains forming a right-handed helix. High quality 3D structure, molecular mechanics layout, dark background.",
+            "Visual representation of the pi-pi orbital overlap (HOMO-LUMO) between two stacked planar conjugated molecules, quantum mechanics schematic showing colorful overlapping wavefunction clouds, high-tech academic slide graphic, transparent glowing neon volumes."
+        ];
+
+        function setPrompt(index) {
+            document.getElementById('prompt-input').value = prompts[index];
+            showToast("Preset Prompt Loaded", "The custom directive has been imported into the Imagen console.", "fa-file-code", "text-indigo-400");
+        }
+
+        // ================= DFT COMPUTATIONAL DATASET (MATCHING image_badfae.png & TABLE 3) =================
+        const dftData = {
+            2: {
+                name: "β-alanine (N2)",
+                coaxialDistance: 3.40,
+                coaxialEnergy: -16.2,
+                coaxialDisp: -8.0,
+                globalAngle: -40,
+                globalDistance: 3.25,
+                globalEnergy: -18.1,
+                globalDisp: -8.6,
+                angles: [-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+                energies: [-8.0, -11.5, -11.0, -16.5, -17.2, -18.1, -14.0, -14.5, -16.0, -16.2, -16.0, -16.6, -16.0, -15.9, -15.5, -14.0, -14.8, -14.5, -14.0],
+                dispContribution: -8.6,
+                color: '#64748b',
+                textColor: 'text-rose-400',
+                helicity: "Left-Handed Twist",
+                cotton: "Negative Cotton Effect"
+            },
+            3: {
+                name: "γ-aminobutyric acid (N3)",
+                coaxialDistance: 3.35,
+                coaxialEnergy: -24.9,
+                coaxialDisp: -7.5,
+                globalAngle: 30,
+                globalDistance: 3.18,
+                globalEnergy: -31.2,
+                globalDisp: -8.3,
+                angles: [-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+                energies: [-23.6, -24.8, -25.6, -26.5, -27.1, -27.3, -23.3, -24.7, -26.0, -24.9, -26.0, -30.5, -31.2, -30.3, -30.0, -29.2, -30.6, -27.6, -28.4],
+                dispContribution: -8.3,
+                color: '#ef4444',
+                textColor: 'text-emerald-400',
+                helicity: "Right-Handed Twist",
+                cotton: "Positive Cotton Effect"
+            },
+            4: {
+                name: "δ-amino valeric acid (N4)",
+                coaxialDistance: 3.36,
+                coaxialEnergy: -13.8,
+                coaxialDisp: -7.3,
+                globalAngle: -50,
+                globalDistance: 3.30,
+                globalEnergy: -16.3,
+                globalDisp: -7.8,
+                angles: [-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+                energies: [-12.3, -12.3, -13.3, -16.1, -16.3, -15.5, -13.8, -14.1, -13.6, -13.8, -15.0, -15.3, -15.8, -15.3, -15.2, -9.8, -9.6, -9.5, -9.5],
+                dispContribution: -7.8,
+                color: '#3b82f6',
+                textColor: 'text-rose-400',
+                helicity: "Left-Handed Twist",
+                cotton: "Negative Cotton Effect"
+            },
+            5: {
+                name: "ε-aminocaproic acid (N5)",
+                coaxialDistance: 3.46,
+                coaxialEnergy: -16.6,
+                coaxialDisp: -7.9,
+                globalAngle: 30,
+                globalDistance: 3.27,
+                globalEnergy: -19.3,
+                globalDisp: -8.6,
+                angles: [-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+                energies: [-10.2, -6.3, -10.5, -13.8, -15.1, -15.8, -16.1, -16.0, -16.3, -16.6, -16.5, -16.5, -19.3, -18.3, -18.3, -17.8, -16.5, -16.4, -16.3],
+                dispContribution: -8.6,
+                color: '#10b981',
+                textColor: 'text-emerald-400',
+                helicity: "Right-Handed Twist",
+                cotton: "Positive Cotton Effect"
+            }
+        };
+
+        // Current UI state tracking variables
+        let currentSpacer = 2; // Default to N2
+        let currentAngle = -40; // in degrees
+        let currentDistance = 3.25; // in Angstroms
+
+        // Linear interpolation helper mapping values smoothly between the 10-degree discrete marks
+        function getEnergy(n, angle, dist) {
+            const data = dftData[n];
+            if (!data) return 0;
+            
+            const clampedAngle = Math.max(-90, Math.min(90, angle));
+            let rawE = 0;
+            
+            // Loop through data to find interpolation bounds
+            for (let i = 0; i < data.angles.length - 1; i++) {
+                const a1 = data.angles[i];
+                const a2 = data.angles[i+1];
+                if (clampedAngle >= a1 && clampedAngle <= a2) {
+                    const e1 = data.energies[i];
+                    const e2 = data.energies[i+1];
+                    const t = (clampedAngle - a1) / (a2 - a1);
+                    rawE = e1 + t * (e2 - e1);
+                    break;
+                }
+            }
+
+            // Stacking distance scaling penalty curve
+            const targetDist = (angle === 0) ? data.coaxialDistance : data.globalDistance;
+            const deviation = dist - targetDist;
+            const distancePenalty = Math.exp(-Math.pow(deviation, 2) / 0.12); // Lennard-Jones style factor
+            
+            let finalE = rawE * distancePenalty;
+            if (finalE > -1) finalE = -1.0; // clamp upper ceiling to show cohesive stacking
+            return finalE;
+        }
+
+        // Dispersion contribution calculation matching proportions of Table 3
+        function getDispersion(n, angle, dist) {
+            const data = dftData[n];
+            const baseEnergy = getEnergy(n, angle, dist);
+            const ratioCoaxial = data.coaxialDisp / data.coaxialEnergy;
+            const ratioGlobal = data.globalDisp / data.globalEnergy;
+            
+            // Distribute proportional ratio according to displacement from parallel coaxial alignment
+            const weight = Math.min(1.0, Math.abs(angle) / 30.0);
+            const currentRatio = weight * ratioGlobal + (1.0 - weight) * ratioCoaxial;
+            return baseEnergy * currentRatio;
+        }
+
+        // ================= 3D MOLECULAR CPK VIEWPORT ENGINE =================
+        let scene, camera, renderer, dimerContainer;
+        let bottomMonomer, topMonomer, dipoleArrowTop, dipoleArrowBottom;
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#030712');
+
+            camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+            camera.position.set(0, 4, 11);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            dimerContainer = new THREE.Group();
+            scene.add(dimerContainer);
+
+            // Realistic environmental lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            keyLight.position.set(5, 12, 5);
+            scene.add(keyLight);
+
+            const fillLight = new THREE.DirectionalLight(0x06b6d4, 0.4); // Rim light
+            fillLight.position.set(-5, -5, -5);
+            scene.add(fillLight);
+
+            rebuildDimerStructure();
+            setupCameraDrag(container);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                dimerContainer.rotation.y += 0.001; // Continuous trace rotation
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                const nw = container.clientWidth;
+                const nh = container.clientHeight;
+                camera.aspect = nw / nh;
+                camera.updateProjectionMatrix();
+                renderer.setSize(nw, nh);
+            });
+        }
+
+        // Procedural generator for standard Ball-and-Stick CPK Atom coordinates
+        function createMonomerGeometry(spacerLength) {
+            const group = new THREE.Group();
+
+            // Materials
+            const matC = new THREE.MeshPhongMaterial({ color: 0x475569, shininess: 80, specular: 0x111111 });
+            const matH = new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90, specular: 0x222222 });
+            const matO = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 85, specular: 0x222222 });
+            const matN = new THREE.MeshPhongMaterial({ color: 0x2563eb, shininess: 85, specular: 0x111111 });
+            const matChiral = new THREE.MeshPhongMaterial({ color: 0x6366f1, shininess: 90, specular: 0x444444 });
+            const matBond = new THREE.MeshPhongMaterial({ color: 0x334155, shininess: 30 });
+
+            const atomSpheres = [];
+
+            // 1. Fused NMI rings in local XY plane
+            const coreAtoms = [
+                { type: 'N', pos: [0, 0.7, 0] }, // index 0: Imide Nitrogen
+                { type: 'C', pos: [-0.67, 0.35, 0] },
+                { type: 'C', pos: [0.67, 0.35, 0] },
+                { type: 'O', pos: [-1.4, 0.8, 0] },
+                { type: 'O', pos: [1.4, 0.8, 0] },
+                { type: 'C', pos: [-0.67, -0.75, 0] },
+                { type: 'C', pos: [0.67, -0.75, 0] },
+                { type: 'C', pos: [-1.4, -0.2, 0] },
+                { type: 'C', pos: [1.4, -0.2, 0] },
+                { type: 'C', pos: [-1.4, -1.5, 0] },
+                { type: 'C', pos: [1.4, -1.5, 0] },
+                { type: 'C', pos: [-0.67, -2.1, 0] },
+                { type: 'C', pos: [0.67, -2.1, 0] },
+                { type: 'C', pos: [-2.1, -0.75, 0] },
+                { type: 'C', pos: [2.1, -0.75, 0] },
+                { type: 'C', pos: [-2.1, -2.1, 0] },
+                { type: 'C', pos: [2.1, -2.1, 0] },
+                { type: 'C', pos: [-1.4, -2.75, 0] },
+                { type: 'C', pos: [1.4, -2.75, 0] }
+            ];
+
+            // Append aromatic ring hydrogens to complete core
+            const ringHydrogens = [
+                [-2.7, -0.3, 0], [2.7, -0.3, 0],
+                [-2.7, -2.5, 0], [2.7, -2.5, 0],
+                [-1.4, -3.5, 0], [1.4, -3.5, 0]
+            ];
+
+            coreAtoms.forEach(a => atomSpheres.push({ type: a.type, pos: [...a.pos] }));
+            ringHydrogens.forEach(h => atomSpheres.push({ type: 'H', pos: h }));
+
+            // 2. Methylene units zigzag chain starting from Imide Nitrogen (0, 0.7, 0)
+            let lastPos = [0, 0.7, 0];
+            for (let i = 0; i < spacerLength; i++) {
+                const xSign = (i % 2 === 0) ? 0.45 : -0.45;
+                const nextPos = [
+                    lastPos[0] + xSign,
+                    lastPos[1] + 0.9,
+                    lastPos[2] + ((i % 3 === 0) ? 0.25 : -0.15)
+                ];
+                atomSpheres.push({ type: 'C', pos: nextPos });
+                // Add adjacent Hydrogens
+                atomSpheres.push({ type: 'H', pos: [nextPos[0] + 0.5, nextPos[1], nextPos[2] + 0.4] });
+                atomSpheres.push({ type: 'H', pos: [nextPos[0] - 0.5, nextPos[1], nextPos[2] - 0.4] });
+                lastPos = nextPos;
+            }
+
+            // 3. Amide Bond Connection
+            const amideC = [lastPos[0] + 0.3, lastPos[1] + 0.9, lastPos[2]];
+            atomSpheres.push({ type: 'C', pos: amideC });
+            atomSpheres.push({ type: 'O', pos: [amideC[0] + 0.6, amideC[1] + 0.15, amideC[2] + 0.4] }); // carbonyl O
+
+            const amideN = [amideC[0] - 0.35, amideC[1] + 0.85, amideC[2]];
+            atomSpheres.push({ type: 'N', pos: amideN });
+            atomSpheres.push({ type: 'H', pos: [amideN[0] - 0.4, amideN[1] + 0.1, amideN[2] - 0.5] }); // amide proton
+
+            // 4. Isoleucine alpha-carbon and chiral terminal
+            const alphaC = [amideN[0], amideN[1] + 0.9, amideN[2]];
+            atomSpheres.push({ type: 'Chiral', pos: alphaC });
+            atomSpheres.push({ type: 'H', pos: [alphaC[0] + 0.5, alphaC[1] + 0.1, alphaC[2] + 0.4] });
+
+            // Ester linkages
+            const esterC = [alphaC[0] - 0.4, alphaC[1] + 0.8, alphaC[2]];
+            atomSpheres.push({ type: 'C', pos: esterC });
+            atomSpheres.push({ type: 'O', pos: [esterC[0] - 0.6, esterC[1] + 0.1, esterC[2] + 0.3] });
+            
+            const esterO = [esterC[0], esterC[1] + 0.8, esterC[2]];
+            atomSpheres.push({ type: 'O', pos: esterO });
+            atomSpheres.push({ type: 'C', pos: [esterO[0] + 0.15, esterO[1] + 0.7, esterO[2]] }); // O-Me carbon
+
+            // sec-butyl terminal tail (representing Isoleucine branching)
+            const betaC = [alphaC[0] + 0.5, alphaC[1] + 0.8, alphaC[2]];
+            atomSpheres.push({ type: 'C', pos: betaC });
+            atomSpheres.push({ type: 'C', pos: [betaC[0] + 0.5, betaC[1] + 0.8, betaC[2]] });
+            atomSpheres.push({ type: 'C', pos: [betaC[0], betaC[1] + 0.8, betaC[2] + 0.9] });
+
+            // Render atoms as ThreeJS Spheres
+            const CPK_Config = {
+                'C': { radius: 0.20, mat: matC },
+                'H': { radius: 0.11, mat: matH },
+                'O': { radius: 0.19, mat: matO },
+                'N': { radius: 0.20, mat: matN },
+                'Chiral': { radius: 0.26, mat: matChiral }
+            };
+
+            const meshes = [];
+            atomSpheres.forEach(atom => {
+                const config = CPK_Config[atom.type];
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(config.radius, 16, 16), config.mat);
+                sphere.position.set(...atom.pos);
+                group.add(sphere);
+                meshes.push({ mesh: sphere, x: atom.pos[0], y: atom.pos[1], z: atom.pos[2] });
+            });
+
+            // Distance-based neighbor bond detection
+            for (let i = 0; i < meshes.length; i++) {
+                for (let j = i + 1; j < meshes.length; j++) {
+                    const dx = meshes[i].x - meshes[j].x;
+                    const dy = meshes[i].y - meshes[j].y;
+                    const dz = meshes[i].z - meshes[j].z;
+                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    // Standard single covalent bond length is usually under 1.62 Å
+                    if (dist < 1.62) {
+                        const start = new THREE.Vector3(meshes[i].x, meshes[i].y, meshes[i].z);
+                        const end = new THREE.Vector3(meshes[j].x, meshes[j].y, meshes[j].z);
+                        
+                        const direction = new THREE.Vector3().subVectors(end, start);
+                        const edgeGeo = new THREE.CylinderGeometry(0.06, 0.06, direction.length(), 8);
+                        const edge = new THREE.Mesh(edgeGeo, matBond);
+                        
+                        // Reorient and position cylinder between neighbor atoms
+                        edge.position.copy(start).addScaledVector(direction, 0.5);
+                        edge.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+                        group.add(edge);
+                    }
+                }
+            }
+
+            return group;
+        }
+
+        function rebuildDimerStructure() {
+            if (bottomMonomer) dimerContainer.remove(bottomMonomer);
+            if (topMonomer) dimerContainer.remove(topMonomer);
+
+            // Construct 3D assemblies dynamically
+            bottomMonomer = createMonomerGeometry(currentSpacer);
+            topMonomer = createMonomerGeometry(currentSpacer);
+
+            // Stack on the perpendicular Z-axis (normal to the planar NMI core)
+            bottomMonomer.position.set(0, 0, -currentDistance / 2);
+            topMonomer.position.set(0, 0, currentDistance / 2);
+
+            // Rotate top stack around Stack Z-axis based on θ
+            topMonomer.rotation.z = THREE.MathUtils.degToRad(currentAngle);
+
+            dimerContainer.add(bottomMonomer);
+            dimerContainer.add(topMonomer);
+
+            // Add electric dipole arrows (Cyan glowing vectors) showing orientation
+            if (dipoleArrowTop) dimerContainer.remove(dipoleArrowTop);
+            if (dipoleArrowBottom) dimerContainer.remove(dipoleArrowBottom);
+
+            const dipoleDirection = new THREE.Vector3(1, 0, 0); // Along imide plane
+            const arrowLength = 1.4;
+            const arrowColor = 0x2dd4bf;
+
+            dipoleArrowBottom = new THREE.ArrowHelper(dipoleDirection, new THREE.Vector3(0, 0, -currentDistance / 2), arrowLength, arrowColor, 0.3, 0.2);
+            // Rotate top arrow dynamically alongside top monomer
+            const rotatedTopDir = new THREE.Vector3(Math.cos(THREE.MathUtils.degToRad(currentAngle)), Math.sin(THREE.MathUtils.degToRad(currentAngle)), 0);
+            dipoleArrowTop = new THREE.ArrowHelper(rotatedTopDir, new THREE.Vector3(0, 0, currentDistance / 2), arrowLength, arrowColor, 0.3, 0.2);
+
+            dimerContainer.add(dipoleArrowBottom);
+            dimerContainer.add(dipoleArrowTop);
+        }
+
+        // Camera drags for orbital exploration
+        function setupCameraDrag(container) {
+            let isDragging = false;
+            let prevMouse = { x: 0, y: 0 };
+
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const delta = {
+                    x: e.clientX - prevMouse.x,
+                    y: e.clientY - prevMouse.y
+                };
+                dimerContainer.rotation.y += delta.x * 0.005;
+                dimerContainer.rotation.x += delta.y * 0.005;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            
+            // Mobile Swipes
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const delta = {
+                    x: e.touches[0].clientX - prevMouse.x,
+                    y: e.touches[0].clientY - prevMouse.y
+                };
+                dimerContainer.rotation.y += delta.x * 0.005;
+                dimerContainer.rotation.x += delta.y * 0.005;
+                prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+
+            container.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function resetCamera() {
+            dimerContainer.rotation.set(0, 0, 0);
+            camera.position.set(0, 4, 11);
+            showToast("Camera Reset", "Simulation rotated back to primary Z-stack axis.", "fa-arrows-to-eye");
+        }
+
+
+        // ================= DFT GRAPH PLOTTING (SVG) =================
+        function drawAllCurves() {
+            // Plot all 4 curve trajectories dynamically on graph
+            ['curve-n2', 'curve-n3', 'curve-n4', 'curve-n5'].forEach((id, idx) => {
+                const molNum = idx + 2;
+                const p = document.getElementById(id);
+                let d = [];
+                for (let deg = -90; deg <= 90; deg += 2) {
+                    const x = 50 + ((deg + 90) / 180) * 900;
+                    const energy = getEnergy(molNum, deg, dftData[molNum].globalDistance);
+                    const y = 170 - (energy / -35) * 150;
+                    d.push(`${x},${y}`);
+                }
+                p.setAttribute('d', `M ${d.join(' L ')}`);
+            });
+
+            // Redraw highlighted active curve
+            const activeStroke = document.getElementById('active-curve-stroke');
+            const activeArea = document.getElementById('active-curve-area');
+            const activeColor = dftData[currentSpacer].color;
+            
+            activeStroke.setAttribute('stroke', activeColor);
+            
+            // Re-apply gradient target color
+            document.getElementById('grad-stop-start').setAttribute('stop-color', activeColor);
+            document.getElementById('grad-stop-end').setAttribute('stop-color', activeColor);
+
+            let activePoints = [];
+            for (let deg = -90; deg <= 90; deg += 2) {
+                const x = 50 + ((deg + 90) / 180) * 900;
+                // Evaluate with respect to CURRENT slider values (allows real-time distortion as distance changes!)
+                const energy = getEnergy(currentSpacer, deg, currentDistance);
+                const y = 170 - (energy / -35) * 150;
+                activePoints.push(`${x},${y}`);
+            }
+
+            const dLine = `M ${activePoints.join(' L ')}`;
+            activeStroke.setAttribute('d', dLine);
+            activeArea.setAttribute('d', `${dLine} L 950,170 L 50,170 Z`);
+
+            // Position minima marker dot label
+            const config = dftData[currentSpacer];
+            const optX = 50 + ((config.globalAngle + 90) / 180) * 900;
+            const optY = 170 - (config.globalEnergy / -35) * 150;
+
+            const optDot = document.getElementById('optimal-dot');
+            const optLabel = document.getElementById('optimal-dot-label');
+
+            optDot.setAttribute('cx', optX);
+            optDot.setAttribute('cy', optY);
+            optDot.setAttribute('fill', activeColor);
+
+            optLabel.setAttribute('x', optX - 45);
+            optLabel.setAttribute('y', optY - 14);
+            optLabel.textContent = `DFT Opt: ${config.globalAngle}° (${config.globalEnergy} kcal/mol)`;
+        }
+
+        function updateGraphPointer() {
+            const pointer = document.getElementById('live-point');
+            const cursorLine = document.getElementById('cursor-line');
+            const activeColor = dftData[currentSpacer].color;
+
+            const x = 50 + ((currentAngle + 90) / 180) * 900;
+            const energy = getEnergy(currentSpacer, currentAngle, currentDistance);
+            const y = 170 - (energy / -35) * 150;
+
+            pointer.setAttribute('cx', x);
+            pointer.setAttribute('cy', y);
+            pointer.setAttribute('fill', activeColor);
+
+            cursorLine.setAttribute('x1', x);
+            cursorLine.setAttribute('y1', 10);
+            cursorLine.setAttribute('x2', x);
+            cursorLine.setAttribute('y2', 185);
+            cursorLine.classList.remove('opacity-0');
+        }
+
+
+        // ================= INTERACTIVE COMPONENT LISTENERS =================
+        const sliderAngle = document.getElementById('angle-slider');
+        const sliderDistance = document.getElementById('distance-slider');
+
+        sliderAngle.addEventListener('input', (e) => {
+            currentAngle = parseFloat(e.target.value);
+            document.getElementById('angle-val').innerText = `${currentAngle.toFixed(1)}°`;
+
+            // Rotate upper monomer in WebGL Viewport
+            if (topMonomer) {
+                topMonomer.rotation.z = THREE.MathUtils.degToRad(currentAngle);
+                
+                // Rotates top dipoleHelper
+                dimerContainer.remove(dipoleArrowTop);
+                const arrowLength = 1.4;
+                const arrowColor = 0x2dd4bf;
+                const rotatedTopDir = new THREE.Vector3(Math.cos(THREE.MathUtils.degToRad(currentAngle)), Math.sin(THREE.MathUtils.degToRad(currentAngle)), 0);
+                dipoleArrowTop = new THREE.ArrowHelper(rotatedTopDir, new THREE.Vector3(0, 0, currentDistance / 2), arrowLength, arrowColor, 0.3, 0.2);
+                dimerContainer.add(dipoleArrowTop);
+            }
+
+            updateQuantumStats();
+        });
+
+        sliderDistance.addEventListener('input', (e) => {
+            currentDistance = parseFloat(e.target.value);
+            document.getElementById('distance-val').innerText = `${currentDistance.toFixed(2)} Å`;
+
+            // Adjust vertical distance
+            if (bottomMonomer && topMonomer) {
+                bottomMonomer.position.z = -currentDistance / 2;
+                topMonomer.position.z = currentDistance / 2;
+                dipoleArrowBottom.position.z = -currentDistance / 2;
+                dipoleArrowTop.position.z = currentDistance / 2;
+            }
+
+            updateQuantumStats();
+            drawAllCurves(); // Recalculate distance distortion path
+        });
+
+        // Snap Helper listeners
+        document.getElementById('btn-snap-coaxial').addEventListener('click', () => {
+            const config = dftData[currentSpacer];
+            currentAngle = 0;
+            currentDistance = config.coaxialDistance;
+
+            sliderAngle.value = currentAngle;
+            sliderDistance.value = currentDistance;
+            document.getElementById('angle-val').innerText = "0.0°";
+            document.getElementById('distance-val').innerText = `${currentDistance.toFixed(2)} Å`;
+
+            rebuildDimerStructure();
+            drawAllCurves();
+            updateQuantumStats();
+            showToast("Snapped to Coaxial Conformer", "Aligned at θ = 0° and d = " + currentDistance + " Å", "fa-arrows-down-to-line", "text-amber-400");
+        });
+
+        document.getElementById('btn-snap-global').addEventListener('click', () => {
+            const config = dftData[currentSpacer];
+            currentAngle = config.globalAngle;
+            currentDistance = config.globalDistance;
+
+            sliderAngle.value = currentAngle;
+            sliderDistance.value = currentDistance;
+            document.getElementById('angle-val').innerText = `${currentAngle.toFixed(1)}°`;
+            document.getElementById('distance-val').innerText = `${currentDistance.toFixed(2)} Å`;
+
+            rebuildDimerStructure();
+            drawAllCurves();
+            updateQuantumStats();
+            showToast("Snapped to Global Minimum", "Aligned at calculated ground state for " + config.name, "fa-award", "text-emerald-400");
+        });
+
+        // Optimization Engine Interpolator animation
+        document.getElementById('btn-optimize').addEventListener('click', () => {
+            const config = dftData[currentSpacer];
+            const targetAngle = config.globalAngle;
+            const targetDistance = config.globalDistance;
+
+            let startAngle = currentAngle;
+            let startDistance = currentDistance;
+            let progress = 0;
+
+            const optimizeStep = () => {
+                progress += 0.035;
+                if (progress >= 1) {
+                    currentAngle = targetAngle;
+                    currentDistance = targetDistance;
+
+                    sliderAngle.value = targetAngle;
+                    sliderDistance.value = targetDistance;
+                    document.getElementById('angle-val').innerText = `${targetAngle.toFixed(1)}°`;
+                    document.getElementById('distance-val').innerText = `${targetDistance.toFixed(2)} Å`;
+
+                    rebuildDimerStructure();
+                    drawAllCurves();
+                    updateQuantumStats();
+
+                    showToast("Optimization Achieved", `${config.name} settled in minimum conformation at B.E. of ${config.globalEnergy} kcal/mol`, "fa-check-double", "text-emerald-400");
+                } else {
+                    currentAngle = startAngle + (targetAngle - startAngle) * progress;
+                    currentDistance = startDistance + (targetDistance - startDistance) * progress;
+
+                    sliderAngle.value = currentAngle;
+                    sliderDistance.value = currentDistance;
+                    document.getElementById('angle-val').innerText = `${currentAngle.toFixed(1)}°`;
+                    document.getElementById('distance-val').innerText = `${currentDistance.toFixed(2)} Å`;
+
+                    if (bottomMonomer && topMonomer) {
+                        bottomMonomer.position.z = -currentDistance / 2;
+                        topMonomer.position.z = currentDistance / 2;
+                        topMonomer.rotation.z = THREE.MathUtils.degToRad(currentAngle);
+                        
+                        dipoleArrowBottom.position.z = -currentDistance / 2;
+                        dimerContainer.remove(dipoleArrowTop);
+                        const rotatedTopDir = new THREE.Vector3(Math.cos(THREE.MathUtils.degToRad(currentAngle)), Math.sin(THREE.MathUtils.degToRad(currentAngle)), 0);
+                        dipoleArrowTop = new THREE.ArrowHelper(rotatedTopDir, new THREE.Vector3(0, 0, currentDistance / 2), 1.4, 0x2dd4bf, 0.3, 0.2);
+                        dimerContainer.add(dipoleArrowTop);
+                    }
+
+                    updateQuantumStats();
+                    drawAllCurves();
+                    requestAnimationFrame(optimizeStep);
+                }
+            };
+            optimizeStep();
+        });
+
+        function updateQuantumStats() {
+            const energy = getEnergy(currentSpacer, currentAngle, currentDistance);
+            const disp = getDispersion(currentSpacer, currentAngle, currentDistance);
+            const config = dftData[currentSpacer];
+
+            document.getElementById('stat-be').innerText = energy.toFixed(2);
+            document.getElementById('stat-disp').innerText = disp.toFixed(2);
+
+            // Sync color indicators and predictions dynamically
+            const labelHelicity = document.getElementById('stat-helicity-badge');
+            const labelCotton = document.getElementById('stat-cotton-text');
+            const labelFiber = document.getElementById('stat-fiber-text');
+
+            if (currentAngle < 0) {
+                labelHelicity.innerText = "Left-Handed Twist";
+                labelHelicity.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20";
+                labelCotton.innerText = "Negative Cotton Effect";
+                labelCotton.className = "font-semibold text-rose-400 animate-pulse";
+                labelFiber.innerText = "Left-Handed Nanofibers";
+                labelFiber.className = "font-semibold text-rose-400";
+            } else if (currentAngle > 0) {
+                labelHelicity.innerText = "Right-Handed Twist";
+                labelHelicity.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                labelCotton.innerText = "Positive Cotton Effect";
+                labelCotton.className = "font-semibold text-emerald-400 animate-pulse";
+                labelFiber.innerText = "Right-Handed Nanofibers";
+                labelFiber.className = "font-semibold text-emerald-400";
+            } else {
+                labelHelicity.innerText = "Planar Stack";
+                labelHelicity.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                labelCotton.innerText = "No Cotton Signal";
+                labelCotton.className = "font-semibold text-slate-500";
+                labelFiber.innerText = "Straight Fibers (Achiral)";
+                labelFiber.className = "font-semibold text-slate-500";
+            }
+
+            const targetD = (currentAngle === 0) ? config.coaxialDistance : config.globalDistance;
+            document.getElementById('optimal-dist-helper').innerText = `Optimal: ${targetD.toFixed(2)} Å`;
+
+            updateGraphPointer();
+        }
+
+        function setSpacer(n) {
+            currentSpacer = n;
+            const config = dftData[n];
+
+            // Highlights spacer menu
+            document.querySelectorAll('.spacer-btn').forEach(btn => {
+                btn.className = "spacer-btn py-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold transition-all hover:bg-slate-800/50";
+            });
+            document.getElementById(`btn-n${n}`).className = "spacer-btn py-2.5 rounded-xl border font-bold transition-all bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md";
+
+            document.getElementById('active-spacer-name').innerText = config.name;
+
+            // Shift current sliders directly to the ground state minimums of new selection
+            currentAngle = config.globalAngle;
+            currentDistance = config.globalDistance;
+
+            sliderAngle.value = currentAngle;
+            sliderDistance.value = currentDistance;
+            document.getElementById('angle-val').innerText = `${currentAngle.toFixed(1)}°`;
+            document.getElementById('distance-val').innerText = `${currentDistance.toFixed(2)} Å`;
+
+            rebuildDimerStructure();
+            drawAllCurves();
+            updateQuantumStats();
+
+            showToast("System Reconfigured", `Switched to active monomer series ${config.name}.`, "fa-atom", "text-emerald-400");
+        }
+
+
+        // ================= IMAGEN API & AI GENERATION ENGINE =================
+        const apiKey = ""; 
+
+        document.getElementById('btn-generate-ai').addEventListener('click', async () => {
+            const promptText = document.getElementById('prompt-input').value.trim();
+
+            if (!promptText) {
+                showToast("Missing Prompt", "Please specify rendering instructions in the console before starting.", "fa-triangle-exclamation", "text-amber-500");
+                return;
+            }
+
+            const placeholder = document.getElementById('ai-placeholder');
+            const loader = document.getElementById('ai-loader');
+            const resultContainer = document.getElementById('ai-result-container');
+            const resultImg = document.getElementById('ai-result-img');
+            const badge = document.getElementById('rendering-badge');
+
+            placeholder.classList.add('hidden');
+            resultContainer.classList.add('hidden');
+            loader.classList.remove('hidden');
+            badge.classList.remove('hidden');
+
+            try {
+                let success = false;
+                let attempt = 0;
+                let result = null;
+
+                while (!success && attempt < 5) {
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                instances: { prompt: promptText },
+                                parameters: { sampleCount: 1 }
+                            })
+                        });
+
+                        if (response.ok) {
+                            result = await response.json();
+                            success = true;
+                        } else {
+                            throw new Error(`HTTP Error Status: ${response.status}`);
+                        }
+                    } catch (err) {
+                        attempt++;
+                        const delay = Math.pow(2, attempt) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+
+                if (success && result.predictions?.[0]?.bytesBase64Encoded) {
+                    const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    resultImg.src = imageUrl;
+
+                    loader.classList.add('hidden');
+                    resultContainer.classList.remove('hidden');
+                    showToast("AI Graphic Ready", "Supramolecular diagram successfully synthesized.", "fa-wand-magic-sparkles", "text-indigo-400");
+                } else {
+                    throw new Error("Generative prediction failed.");
+                }
+
+            } catch (error) {
+                loader.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                showToast("Synthesize Failed", "API key missing or endpoint timeout. Please verify connections.", "fa-circle-xmark", "text-red-500");
+            } finally {
+                badge.classList.add('hidden');
+            }
+        });
+
+        function downloadRender() {
+            const img = document.getElementById('ai-result-img');
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `DFT_Nanofiber_Assembly_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialize Workspace on Page Load
+        window.onload = function() {
+            init3D();
+            drawAllCurves();
+            updateQuantumStats();
+        };
+
+    </script>
+</body>
+</html>
